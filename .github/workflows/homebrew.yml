@@ -1,0 +1,46 @@
+name: Homebrew cask
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  metadata:
+    runs-on: xcode-27
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Register the checked-out tap
+        run: |
+          tap="$(brew --repository)/Library/Taps/dglassow/homebrew-tap"
+          mkdir -p "$(dirname "$tap")"
+          git clone --no-hardlinks "$GITHUB_WORKSPACE" "$tap"
+      - run: brew trust --cask dglassow/tap/glass
+      - run: node --test update-cask.test.mjs lifecycle.test.mjs
+      - run: brew style Casks/glass.rb
+      - run: brew audit --cask --strict dglassow/tap/glass
+      - name: Exercise the published application and cask lifecycle
+        run: |
+          appdir="$RUNNER_TEMP/glass-applications"
+          mkdir -p "$appdir" "$HOME/.glass" "$HOME/.local/bin"
+          printf '%s' retained-owner-state > "$HOME/.glass/homebrew-smoke-state"
+          brew install --cask --appdir="$appdir" dglassow/tap/glass
+          "$appdir/Glass.app/Contents/MacOS/glass-desktop" --version
+          codesign --verify --deep --strict "$appdir/Glass.app"
+          brew reinstall --cask --appdir="$appdir" dglassow/tap/glass
+          brew uninstall --cask dglassow/tap/glass
+          test ! -d "$appdir/Glass.app"
+          test "$(cat "$HOME/.glass/homebrew-smoke-state")" = retained-owner-state
+          brew install --cask --appdir="$appdir" dglassow/tap/glass
+          ln -s "$appdir/Glass.app/Contents/MacOS/glass-desktop" "$HOME/.local/bin/glassctl"
+          glass-uninstall
+          test ! -L "$HOME/.local/bin/glassctl"
+          test ! -d "$appdir/Glass.app"
+          test "$(cat "$HOME/.glass/homebrew-smoke-state")" = retained-owner-state
