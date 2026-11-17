@@ -34,6 +34,14 @@ cask "glass" do
     home = ENV.fetch("HOME")
     agents = File.join(home, "Library", "LaunchAgents")
     service = File.join(home, ".glass", "service")
+    boot_label = "com.glassow.glass.backend.boot"
+    boot_plist = "/Library/LaunchDaemons/#{boot_label}.plist"
+    _output, _error, boot_loaded = Open3.capture3("/bin/launchctl", "print", "system/#{boot_label}")
+    if File.exist?(boot_plist) || boot_loaded.success?
+      abort "Glass boot start is still installed or loaded. First run glass boot-start disable, then " \
+        "\"$HOME/.glass/service/node\" \"$HOME/.glass/service/glass-backend.mjs\" --shutdown-service " \
+        "(administrator approval required), then run glass-uninstall again."
+    end
     labels = {
       "com.glassow.glass.backend" => [
         File.join(service, "node"), File.join(service, "glassd.mjs"),
