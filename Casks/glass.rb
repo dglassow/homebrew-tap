@@ -1,6 +1,6 @@
 cask "glass" do
-  version "0.3.5"
-  sha256 "9bc229558679f947763701804f3ae8d78fb2edbb89e8faf133b4c3d8d3fcd018"
+  version "0.3.7"
+  sha256 "5672d5d3bc80aea34553c4b4fb33f71ff603efb72333f8b72053e508076f4d53"
 
   url "https://github.com/dglassow/Glass/releases/download/v#{version}/Glass.dmg"
   name "Glass"
